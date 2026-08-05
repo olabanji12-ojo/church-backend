@@ -1,0 +1,11 @@
+.git
+.gitignore
+.vscode
+.env
+.idea
+vendor/
+tmp/
+my_app
+*.exe
+*.log
+*.sqlite
