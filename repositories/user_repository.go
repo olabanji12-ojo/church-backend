@@ -118,7 +118,7 @@ func (ur *UserRepository) GetUsersByIDs(userIDs []primitive.ObjectID) ([]models.
 	return users, nil
 }
 
-// GetTargetGender determines the target gender for discovery (Men see Women, Women see Men)
+// GetTargetGender determines the target gender string for discovery (Female or Male)
 func GetTargetGender(user *models.User) string {
 	interestedIn := strings.TrimSpace(strings.ToLower(user.InterestedIn))
 	if interestedIn == "female" || interestedIn == "women" || interestedIn == "woman" {
@@ -130,11 +130,23 @@ func GetTargetGender(user *models.User) string {
 
 	// Fallback based on user's gender
 	gender := strings.TrimSpace(strings.ToLower(user.Gender))
-	if gender == "male" || gender == "man" {
+	if gender == "male" || gender == "man" || gender == "men" {
 		return "Female"
 	}
-	if gender == "female" || gender == "woman" {
+	if gender == "female" || gender == "woman" || gender == "women" {
 		return "Male"
+	}
+	return ""
+}
+
+// GetTargetGenderRegexPattern returns a regex pattern matching all variations of the target gender
+func GetTargetGenderRegexPattern(user *models.User) string {
+	target := GetTargetGender(user)
+	if target == "Female" {
+		return "^(female|woman|women)"
+	}
+	if target == "Male" {
+		return "^(male|man|men)"
 	}
 	return ""
 }
@@ -150,9 +162,9 @@ func (ur *UserRepository) FindPotentialMatches(currentUser *models.User, exclude
 	filter := bson.M{"_id": bson.M{"$nin": allExcluded}}
 
 	// 1b. Apply Gender Filtering (Men see Women, Women see Men)
-	targetGender := GetTargetGender(currentUser)
-	if targetGender != "" {
-		filter["gender"] = primitive.Regex{Pattern: "^" + targetGender, Options: "i"}
+	targetGenderPattern := GetTargetGenderRegexPattern(currentUser)
+	if targetGenderPattern != "" {
+		filter["gender"] = primitive.Regex{Pattern: targetGenderPattern, Options: "i"}
 	}
 
 	// 2. Apply Preferences if they exist!
@@ -232,9 +244,9 @@ func (ur *UserRepository) FindPotentialMatchesVector(currentUser *models.User, e
 	}
 
 	// 1b. Apply Gender Filtering (Men see Women, Women see Men)
-	targetGender := GetTargetGender(currentUser)
-	if targetGender != "" {
-		matchFilter["gender"] = primitive.Regex{Pattern: "^" + targetGender, Options: "i"}
+	targetGenderPattern := GetTargetGenderRegexPattern(currentUser)
+	if targetGenderPattern != "" {
+		matchFilter["gender"] = primitive.Regex{Pattern: targetGenderPattern, Options: "i"}
 	}
 
 	// 2. Apply Age Preferences if they exist
