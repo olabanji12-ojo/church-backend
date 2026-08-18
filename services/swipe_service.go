@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/olabanji12-ojo/church-backend/models"
@@ -162,6 +163,21 @@ func (ss *SwipeService) GetDiscoveryFeed(userID primitive.ObjectID) ([]models.Us
 			filteredUsers = append(filteredUsers, candidate)
 		}
 		users = filteredUsers
+	}
+
+	// 5c. Strict in-memory gender filtering safeguard (Men see Women, Women see Men)
+	targetGender := repositories.GetTargetGender(currentUser)
+	if targetGender != "" {
+		var genderFilteredUsers []models.User
+		for _, candidate := range users {
+			candGender := strings.TrimSpace(strings.ToLower(candidate.Gender))
+			if strings.EqualFold(targetGender, "Female") && (candGender == "female" || candGender == "woman" || candGender == "women") {
+				genderFilteredUsers = append(genderFilteredUsers, candidate)
+			} else if strings.EqualFold(targetGender, "Male") && (candGender == "male" || candGender == "man" || candGender == "men") {
+				genderFilteredUsers = append(genderFilteredUsers, candidate)
+			}
+		}
+		users = genderFilteredUsers
 	}
 
 	// 6. Enrich candidate profiles with Scenario Match Scores, Shared Badges & Icebreakers

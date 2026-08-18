@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/olabanji12-ojo/church-backend/models"
@@ -117,6 +118,27 @@ func (ur *UserRepository) GetUsersByIDs(userIDs []primitive.ObjectID) ([]models.
 	return users, nil
 }
 
+// GetTargetGender determines the target gender for discovery (Men see Women, Women see Men)
+func GetTargetGender(user *models.User) string {
+	interestedIn := strings.TrimSpace(strings.ToLower(user.InterestedIn))
+	if interestedIn == "female" || interestedIn == "women" || interestedIn == "woman" {
+		return "Female"
+	}
+	if interestedIn == "male" || interestedIn == "men" || interestedIn == "man" {
+		return "Male"
+	}
+
+	// Fallback based on user's gender
+	gender := strings.TrimSpace(strings.ToLower(user.Gender))
+	if gender == "male" || gender == "man" {
+		return "Female"
+	}
+	if gender == "female" || gender == "woman" {
+		return "Male"
+	}
+	return ""
+}
+
 // FindPotentialMatches fetches users for the discovery feed, respecting user preferences
 func (ur *UserRepository) FindPotentialMatches(currentUser *models.User, excludedUserIDs []primitive.ObjectID, limit int64) ([]models.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -126,6 +148,12 @@ func (ur *UserRepository) FindPotentialMatches(currentUser *models.User, exclude
 	allExcluded := append([]primitive.ObjectID{currentUser.ID}, excludedUserIDs...)
 	allExcluded = append(allExcluded, currentUser.BlockedUsers...)
 	filter := bson.M{"_id": bson.M{"$nin": allExcluded}}
+
+	// 1b. Apply Gender Filtering (Men see Women, Women see Men)
+	targetGender := GetTargetGender(currentUser)
+	if targetGender != "" {
+		filter["gender"] = primitive.Regex{Pattern: "^" + targetGender, Options: "i"}
+	}
 
 	// 2. Apply Preferences if they exist!
 	if currentUser.PreferredDenomination != "" && currentUser.PreferredDenomination != "Any" {
@@ -190,6 +218,12 @@ func (ur *UserRepository) FindPotentialMatchesVector(currentUser *models.User, e
 	// Create matches filter
 	matchFilter := bson.M{
 		"_id": bson.M{"$nin": allExcluded},
+	}
+
+	// 1b. Apply Gender Filtering (Men see Women, Women see Men)
+	targetGender := GetTargetGender(currentUser)
+	if targetGender != "" {
+		matchFilter["gender"] = primitive.Regex{Pattern: "^" + targetGender, Options: "i"}
 	}
 
 	// 2. Apply Age Preferences if they exist
