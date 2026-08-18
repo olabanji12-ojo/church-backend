@@ -197,6 +197,17 @@ func (ur *UserRepository) FindPotentialMatches(currentUser *models.User, exclude
 	if err = cursor.All(ctx, &users); err != nil {
 		return nil, err
 	}
+
+	// If strict preference filters returned 0 candidates, fallback without denomination/church_freq filters
+	if len(users) == 0 && (filter["denomination"] != nil || filter["church_freq"] != nil) {
+		delete(filter, "denomination")
+		delete(filter, "church_freq")
+		fallbackCursor, fallbackErr := ur.db.Collection("users").Find(ctx, filter, opts)
+		if fallbackErr == nil {
+			_ = fallbackCursor.All(ctx, &users)
+			fallbackCursor.Close(ctx)
+		}
+	}
 	
 	// Clear password hashes before returning
 	for i := range users {

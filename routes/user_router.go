@@ -15,6 +15,7 @@ func UserRoutes(router *mux.Router, userController *controllers.UserController) 
 	user.HandleFunc("/me", userController.GetCurrentUserHandler).Methods("GET")
 	user.HandleFunc("/me", userController.UpdateCurrentUserHandler).Methods("PATCH")
 	user.HandleFunc("/me/faith-profile", userController.UpdateFaithProfileHandler).Methods("PATCH")
+	user.HandleFunc("/push-token", userController.SavePushToken).Methods("POST")
 
 	user.HandleFunc("/scenarios/questions", userController.GetScenarioQuestionsHandler).Methods("GET")
 	user.HandleFunc("/scenarios/answer", userController.AnswerScenarioHandler).Methods("POST")

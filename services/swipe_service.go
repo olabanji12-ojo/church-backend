@@ -138,11 +138,22 @@ func (ss *SwipeService) GetDiscoveryFeed(userID primitive.ObjectID) ([]models.Us
 		users, vectorErr = ss.userRepository.FindPotentialMatchesVector(currentUser, excludedUserIDs, 20)
 	}
 
-	// 5. Fallback to standard query if vector search is unavailable/fails, or user has no embedding
-	if len(currentUser.ProfileEmbedding) != 384 || vectorErr != nil {
-		logrus.Info("Falling back to standard database matching query.")
-		users, err = ss.userRepository.FindPotentialMatches(currentUser, excludedUserIDs, 20)
-		if err != nil {
+	// 5. Fallback or merge standard query if vector search is unavailable/fails, or user has no embedding, or returned few candidates
+	if len(currentUser.ProfileEmbedding) != 384 || vectorErr != nil || len(users) < 10 {
+		logrus.Info("Fetching candidates from standard database matching query.")
+		stdUsers, err := ss.userRepository.FindPotentialMatches(currentUser, excludedUserIDs, 20)
+		if err == nil && len(stdUsers) > 0 {
+			existingIDs := make(map[primitive.ObjectID]bool)
+			for _, u := range users {
+				existingIDs[u.ID] = true
+			}
+			for _, u := range stdUsers {
+				if !existingIDs[u.ID] {
+					users = append(users, u)
+					existingIDs[u.ID] = true
+				}
+			}
+		} else if len(users) == 0 && err != nil {
 			return nil, err
 		}
 	}
