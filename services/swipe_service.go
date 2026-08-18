@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/olabanji12-ojo/church-backend/models"
 	"github.com/olabanji12-ojo/church-backend/repositories"
@@ -141,6 +142,24 @@ func (ss *SwipeService) GetDiscoveryFeed(userID primitive.ObjectID) ([]models.Us
 		}
 	}
 
+	// 5b. Strict in-memory age range filtering (MinAgePref & MaxAgePref)
+	if currentUser.MinAgePref > 0 || currentUser.MaxAgePref > 0 {
+		var filteredUsers []models.User
+		for _, candidate := range users {
+			if !candidate.DateOfBirth.IsZero() {
+				age := calculateUserAge(candidate.DateOfBirth)
+				if currentUser.MinAgePref > 0 && age < currentUser.MinAgePref {
+					continue
+				}
+				if currentUser.MaxAgePref > 0 && age > currentUser.MaxAgePref {
+					continue
+				}
+			}
+			filteredUsers = append(filteredUsers, candidate)
+		}
+		users = filteredUsers
+	}
+
 	// 6. Enrich candidate profiles with Scenario Match Scores, Shared Badges & Icebreakers
 	scenarioSvc := NewScenarioService()
 	for i := range users {
@@ -156,6 +175,18 @@ func (ss *SwipeService) GetDiscoveryFeed(userID primitive.ObjectID) ([]models.Us
 	})
 
 	return users, nil
+}
+
+func calculateUserAge(dob time.Time) int {
+	if dob.IsZero() {
+		return 0
+	}
+	now := time.Now()
+	age := now.Year() - dob.Year()
+	if now.YearDay() < dob.YearDay() {
+		age--
+	}
+	return age
 }
 
 // GetMatches returns a list of MatchResponse models representing the user's successful matches and their last message
