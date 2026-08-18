@@ -308,6 +308,9 @@ func (ss *SwipeService) Unmatch(actorID, targetID primitive.ObjectID) error {
 }
 
 func (ss *SwipeService) sendMatchNotification(actorID, targetID primitive.ObjectID) {
+	if ss.notifService == nil {
+		return
+	}
 	// 1. Send push to targetID (notifying target user that they matched with actor)
 	targetUser, err := ss.userRepository.FindUserByID(targetID)
 	if err == nil && targetUser.PushToken != "" {
@@ -338,6 +341,9 @@ func (ss *SwipeService) sendMatchNotification(actorID, targetID primitive.Object
 }
 
 func (ss *SwipeService) sendLikeNotification(actorID, targetID primitive.ObjectID) {
+	if ss.notifService == nil {
+		return
+	}
 	targetUser, err := ss.userRepository.FindUserByID(targetID)
 	if err != nil || targetUser.PushToken == "" {
 		return
