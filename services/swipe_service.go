@@ -290,10 +290,15 @@ func (ss *SwipeService) sendLikeNotification(actorID, targetID primitive.ObjectI
 	if err != nil || targetUser.PushToken == "" {
 		return
 	}
+	actorUser, _ := ss.userRepository.FindUserByID(actorID)
+	msg := "Someone is interested in connecting with you. Open Covenant to see!"
+	if actorUser != nil && actorUser.FirstName != "" {
+		msg = fmt.Sprintf("%s is interested in connecting with you. Open Covenant to see!", actorUser.FirstName)
+	}
 	ss.notifService.SendPush(
 		targetUser.PushToken,
 		"New Connection Request 🙏",
-		"Someone is interested in connecting with you. Open Church-Match to see!",
+		msg,
 		"/app/discover",
 	)
 }

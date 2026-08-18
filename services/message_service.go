@@ -83,9 +83,10 @@ func (ms *MessageService) sendPushNotification(senderID, targetID primitive.Obje
 
 	// 3. Prepare message body
 	bodyText := content
-	if messageType == "prayer" {
+	switch messageType {
+	case "prayer":
 		bodyText = "🙏 Sent you a prayer"
-	} else if messageType == "scripture" {
+	case "scripture":
 		bodyText = "📖 Shared a scripture with you"
 	}
 
