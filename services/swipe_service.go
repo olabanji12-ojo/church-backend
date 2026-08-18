@@ -35,16 +35,20 @@ func (ss *SwipeService) SwipeRight(actorID, targetID primitive.ObjectID) (*model
 	if err == nil && existingMatch != nil {
 		// Document exists. Was it pending? 
 		if existingMatch.Status == "pending" {
-			// IT'S A MATCH!
-			err = ss.matchRepository.UpdateMatchStatus(existingMatch.ID, "matched")
-			if err != nil {
-				return nil, err
-			}
-			existingMatch.Status = "matched"
-			
-			// Trigger Match Notification in background
-			go ss.sendMatchNotification(actorID, targetID)
+			// If target swiped first (initiator Users[0] is targetID), then this is a MUTUAL MATCH!
+			if len(existingMatch.Users) > 0 && existingMatch.Users[0] == targetID {
+				err = ss.matchRepository.UpdateMatchStatus(existingMatch.ID, "matched")
+				if err != nil {
+					return nil, err
+				}
+				existingMatch.Status = "matched"
+				
+				// Trigger Match Notification in background
+				go ss.sendMatchNotification(actorID, targetID)
 
+				return existingMatch, nil
+			}
+			// If actorID is the initiator, request is already pending for target to respond
 			return existingMatch, nil
 		}
 		return existingMatch, nil // Already matched or rejected
@@ -234,6 +238,27 @@ func (ss *SwipeService) GetMatches(userID primitive.ObjectID) ([]models.MatchRes
 	}
 
 	return responses, nil
+}
+
+// GetPendingLikes returns users who have sent a connection request (liked) the current user
+func (ss *SwipeService) GetPendingLikes(userID primitive.ObjectID) ([]models.User, error) {
+	matches, err := ss.matchRepository.GetPendingLikesForUser(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var requesterIDs []primitive.ObjectID
+	for _, match := range matches {
+		if len(match.Users) > 0 && match.Users[0] != userID {
+			requesterIDs = append(requesterIDs, match.Users[0])
+		}
+	}
+
+	if len(requesterIDs) == 0 {
+		return []models.User{}, nil
+	}
+
+	return ss.userRepository.GetUsersByIDs(requesterIDs)
 }
 
 // Unmatch removes a match and all of its associated chat history

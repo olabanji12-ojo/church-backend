@@ -138,3 +138,28 @@ func (mr *MatchRepository) DeleteMatch(matchID primitive.ObjectID) error {
 	_, err := mr.db.Collection("matches").DeleteOne(ctx, bson.M{"_id": matchID})
 	return err
 }
+
+// GetPendingLikesForUser gets pending match documents where userID is involved
+func (mr *MatchRepository) GetPendingLikesForUser(userID primitive.ObjectID) ([]models.Match, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	filter := bson.M{
+		"users":  userID,
+		"status": "pending",
+	}
+
+	cursor, err := mr.db.Collection("matches").Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var matches []models.Match
+	if err = cursor.All(ctx, &matches); err != nil {
+		return nil, err
+	}
+
+	return matches, nil
+}
+

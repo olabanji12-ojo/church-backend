@@ -100,6 +100,28 @@ func (mc *MatchController) GetMatchesHandler(w http.ResponseWriter, r *http.Requ
 	})
 }
 
+// GetPendingLikesHandler gets all pending incoming connection requests for the current user
+func (mc *MatchController) GetPendingLikesHandler(w http.ResponseWriter, r *http.Request) {
+	authCtx, err := middleware.GetAuthContextDirect(r)
+	if err != nil {
+		utils.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	userID, _ := primitive.ObjectIDFromHex(authCtx.UserID)
+
+	likes, err := mc.SwipeService.GetPendingLikes(userID)
+	if err != nil {
+		utils.Error(w, http.StatusInternalServerError, "Failed to get connection requests")
+		return
+	}
+
+	utils.JSON(w, http.StatusOK, map[string]interface{}{
+		"message": "Connection requests retrieved successfully",
+		"data":    likes,
+	})
+}
+
 // UnmatchHandler deletes a match and its messages
 func (mc *MatchController) UnmatchHandler(w http.ResponseWriter, r *http.Request) {
 	authCtx, err := middleware.GetAuthContextDirect(r)
