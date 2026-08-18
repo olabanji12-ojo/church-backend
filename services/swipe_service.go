@@ -303,8 +303,8 @@ func (ss *SwipeService) Unmatch(actorID, targetID primitive.ObjectID) error {
 		// We continue anyway to ensure the match is deleted
 	}
 
-	// 3. Delete the match document itself
-	return ss.matchRepository.DeleteMatch(match.ID)
+	// 3. Mark match as rejected so users do not reappear in each other's discovery feed
+	return ss.matchRepository.UpdateMatchStatus(match.ID, "rejected")
 }
 
 func (ss *SwipeService) sendMatchNotification(actorID, targetID primitive.ObjectID) {
