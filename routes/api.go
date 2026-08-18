@@ -73,8 +73,16 @@ func InitChatController(db *mongo.Database, globalHub *hub.Hub) *controllers.Cha
 
 // InitRoutes wires everything to the Gorilla Mux Router
 func InitRoutes(router *mux.Router, db *mongo.Database, globalHub *hub.Hub) {
-	// Base health check
+	// Base root & health check
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status": "ok", "app": "Church-Match API", "version": "1.0.0"}`))
+	}).Methods("GET")
+
 	router.HandleFunc("/api/v1/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status": "ok", "app": "Church-Match API"}`))
 	}).Methods("GET")
 
