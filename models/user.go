@@ -45,10 +45,16 @@ type User struct {
 	ScenarioAnswers map[string]string `bson:"scenario_answers,omitempty" json:"scenario_answers,omitempty"`
 	UnlockedBadges  []string          `bson:"unlocked_badges,omitempty" json:"unlocked_badges,omitempty"`
 
+	// Genotype & Medical Profile
+	Genotype             string `bson:"genotype,omitempty" json:"genotype,omitempty"`                         // "AA", "AS", "AC", "SS", "SC", or "Unknown"
+	StrictGenotypeFilter bool   `bson:"strict_genotype_filter,omitempty" json:"strict_genotype_filter,omitempty"` // Enforce medical safeguard filter
+
 	// Calculated Dynamic Fields for Candidate Profiles
 	MatchScore       int      `bson:"-" json:"match_score,omitempty"`
 	SharedBadges     []string `bson:"-" json:"shared_badges,omitempty"`
 	IcebreakerPrompt string   `bson:"-" json:"icebreaker_prompt,omitempty"`
+	GenotypeStatus   string   `bson:"-" json:"genotype_status,omitempty"`  // "compatible", "incompatible", "unverified"
+	GenotypeWarning  string   `bson:"-" json:"genotype_warning,omitempty"` // Medical warning message if incompatible
 
 	CreatedAt  time.Time `bson:"created_at" json:"created_at"`
 	UpdatedAt  time.Time `bson:"updated_at" json:"updated_at"`

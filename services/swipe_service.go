@@ -191,13 +191,26 @@ func (ss *SwipeService) GetDiscoveryFeed(userID primitive.ObjectID) ([]models.Us
 		users = genderFilteredUsers
 	}
 
-	// 6. Enrich candidate profiles with Scenario Match Scores, Shared Badges & Icebreakers
+	// 5d. Medical Genotype Safeguard Engine (Visibility Preserved with Friendship/Fellowship Advisory)
+	genotypeSvc := NewGenotypeService()
+
+	// 6. Enrich candidate profiles with Scenario Match Scores, Shared Badges, Icebreakers & Genotype Status
 	scenarioSvc := NewScenarioService()
 	for i := range users {
 		matchScore, sharedBadges, icebreaker := scenarioSvc.CalculateCompatibility(*currentUser, users[i])
 		users[i].MatchScore = matchScore
 		users[i].SharedBadges = sharedBadges
 		users[i].IcebreakerPrompt = icebreaker
+
+		// Calculate Genotype status and advisory warning
+		status, warning := genotypeSvc.EvaluateCompatibility(currentUser.Genotype, users[i].Genotype)
+		users[i].GenotypeStatus = status
+		users[i].GenotypeWarning = warning
+
+		// If medical incompatibility exists (e.g. AS + AS), adjust badge to recommend Friendship & Fellowship
+		if status == "incompatible" {
+			users[i].SharedBadges = append([]string{"🤝 Friendship & Fellowship Only"}, users[i].SharedBadges...)
+		}
 	}
 
 	// 7. Sort candidates in descending order of Covenant Match Score
