@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/olabanji12-ojo/church-backend/hub"
 	"github.com/olabanji12-ojo/church-backend/middleware"
+	"github.com/olabanji12-ojo/church-backend/models"
 	"github.com/olabanji12-ojo/church-backend/services"
 	"github.com/olabanji12-ojo/church-backend/utils"
 	"github.com/sirupsen/logrus"
@@ -63,7 +64,7 @@ func (cc *ChatController) ServeWS(w http.ResponseWriter, r *http.Request) {
 	go client.ReadPump()
 }
 
-// GetMessagesHandler fetches the historical messages for a specific match
+// GetMessagesHandler fetches the historical messages for a specific match or target user
 func (cc *ChatController) GetMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	authCtx, err := middleware.GetAuthContextDirect(r)
 	if err != nil {
@@ -79,12 +80,18 @@ func (cc *ChatController) GetMessagesHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// 1. Find the Match ID between these two users
-	// We need to access the match repo through a helper method, so let's add GetChatHistoryByTarget
+	// 1. Try finding messages by target user ID first
 	messages, err := cc.MessageService.GetChatHistoryByTarget(senderOID, targetOID)
-	if err != nil {
-		utils.Error(w, http.StatusInternalServerError, "Failed to fetch messages")
-		return
+	if err != nil || len(messages) == 0 {
+		// 2. Fallback: Check if targetIDStr was actually a Match ID directly
+		matchMessages, err2 := cc.MessageService.GetChatHistory(targetOID)
+		if err2 == nil && len(matchMessages) > 0 {
+			messages = matchMessages
+		}
+	}
+
+	if messages == nil {
+		messages = []models.Message{}
 	}
 
 	utils.JSON(w, http.StatusOK, map[string]interface{}{

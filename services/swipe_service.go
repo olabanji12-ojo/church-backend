@@ -270,8 +270,9 @@ func (ss *SwipeService) GetMatches(userID primitive.ObjectID) ([]models.MatchRes
 	for _, user := range users {
 		matchID := matchMap[user.ID]
 		lastMsg, _ := ss.messageRepository.GetLastMessageForMatch(matchID) // Ignore error, nil is fine
-		
+
 		responses = append(responses, models.MatchResponse{
+			MatchID:     matchID,
 			User:        user,
 			LastMessage: lastMsg,
 		})

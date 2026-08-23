@@ -16,6 +16,7 @@ type Match struct {
 
 // MatchResponse is a composite struct used by the frontend Inbox to display a match along with the last message.
 type MatchResponse struct {
-	User        User     `json:"user"`
-	LastMessage *Message `json:"last_message"`
+	MatchID     primitive.ObjectID `json:"match_id"`
+	User        User               `json:"user"`
+	LastMessage *Message           `json:"last_message"`
 }
