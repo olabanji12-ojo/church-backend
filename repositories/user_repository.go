@@ -234,7 +234,7 @@ func (ur *UserRepository) FindPotentialMatches(currentUser *models.User, exclude
 
 // FindPotentialMatchesVector fetches users using MongoDB Atlas Vector Search based on profile embedding similarity
 func (ur *UserRepository) FindPotentialMatchesVector(currentUser *models.User, excludedUserIDs []primitive.ObjectID, limit int64) ([]models.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	// 1. Exclude current user, interacted users, and blocked users

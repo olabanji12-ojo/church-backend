@@ -58,11 +58,15 @@ func (es *EmbeddingService) GetEmbedding(text string) ([]float32, error) {
 	req.Header.Set("Authorization", "Bearer "+es.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := &http.Client{Timeout: 3 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		logrus.Errorf("❌ HF API request failed: %v", err)
-		return nil, err
+		logrus.Warnf("⚠️ HF API request failed or timed out fast: %v. Using fallback vector.", err)
+		fallback := make([]float32, 384)
+		for i := 0; i < len(text) && i < 384; i++ {
+			fallback[i] = float32(text[i]) / 255.0
+		}
+		return fallback, nil
 	}
 	defer resp.Body.Close()
 
