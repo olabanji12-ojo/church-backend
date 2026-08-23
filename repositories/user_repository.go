@@ -41,13 +41,16 @@ func (ur *UserRepository) CreateUser(user *models.User) error {
 	return nil
 }
 
-// FindUserByEmail searches for a user by their email
+// FindUserByEmail searches for a user by their email (case-insensitive)
 func (ur *UserRepository) FindUserByEmail(email string) (*models.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	cleanEmail := strings.TrimSpace(strings.ToLower(email))
+	filter := bson.M{"email": primitive.Regex{Pattern: "^" + cleanEmail + "$", Options: "i"}}
+
 	var user models.User
-	err := ur.db.Collection("users").FindOne(ctx, bson.M{"email": email}).Decode(&user)
+	err := ur.db.Collection("users").FindOne(ctx, filter).Decode(&user)
 	if err != nil {
 		logrus.Warn("User not found with email: ", email)
 		return nil, err
