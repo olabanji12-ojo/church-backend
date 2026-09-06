@@ -164,3 +164,4 @@ func (es *EmbeddingService) GeneratePartnerPreferenceText(user *models.User) str
 
 	return text
 }
+
